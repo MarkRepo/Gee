@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	proto "github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 
 	pb "github.com/MarkRepo/Gee/GeeCache/cache/cachepb"
 	"github.com/MarkRepo/Gee/GeeCache/cache/consistenthash"
@@ -136,29 +136,4 @@ func (h *httpGetter) Get(in *pb.Request, out *pb.Response) error {
 	}
 
 	return nil
-}
-
-func (h *httpGetter) Get1(group string, key string) ([]byte, error) {
-	u := fmt.Sprintf(
-		"%v%v/%v",
-		h.baseURL,
-		url.QueryEscape(group),
-		url.QueryEscape(key),
-	)
-	res, err := http.Get(u)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server returned: %v", res.Status)
-	}
-
-	bytes, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading response body: %v", err)
-	}
-
-	return bytes, nil
 }
