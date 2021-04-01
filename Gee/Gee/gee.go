@@ -1,4 +1,4 @@
-package Gee
+package gee
 
 import (
 	"fmt"
@@ -40,6 +40,6 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if handler, ok := e.router[key]; ok {
 		handler(w, req)
 	} else {
-		fmt.Fprintf(w, "404 NOT FOUND: %s\n", req.URL)
+		_, _ = fmt.Fprintf(w, "404 NOT FOUND: %s\n", req.URL)
 	}
 }
