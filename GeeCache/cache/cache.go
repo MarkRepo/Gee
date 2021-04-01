@@ -3,7 +3,7 @@ package cache
 import (
 	"sync"
 
-	"github.com/MarkRepo/Gee/cache/lru"
+	"github.com/MarkRepo/Gee/GeeCache/cache/lru"
 )
 
 // cache 加锁封装lru接口、延迟初始化

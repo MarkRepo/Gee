@@ -11,9 +11,9 @@ type Hash func([]byte) uint32
 // Map constains all hashed keys
 type Map struct {
 	hash     Hash
-	replicas int   // 虚拟节点倍数
-	keys     []int // Sorted 哈希环
-	hashMap  map[int]string
+	replicas int            // 虚拟节点倍数
+	keys     []int          // Sorted 哈希环
+	hashMap  map[int]string // 虚拟节点到真实节点的映射
 }
 
 // New creates a Map instance

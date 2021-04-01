@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/MarkRepo/Gee/cache"
+	"github.com/MarkRepo/Gee/GeeCache/cache"
 )
 
 var db = map[string]string{
@@ -73,5 +73,5 @@ func main() {
 	if api {
 		go startAPIServer(apiAddr, gee)
 	}
-	startCacheServer(addrMap[port], []string(addrs), gee)
+	startCacheServer(addrMap[port], addrs, gee)
 }
