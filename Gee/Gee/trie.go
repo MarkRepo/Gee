@@ -27,7 +27,7 @@ func (n *node) matchChild(part string) *node {
 }
 
 // 所有匹配成功的节点，用于查询
-func (n *node) matchChilden(part string) []*node {
+func (n *node) matchChildren(part string) []*node {
 	nodes := make([]*node, 0)
 	for _, child := range n.children {
 		if child.part == part || child.isWild {
@@ -69,7 +69,7 @@ func (n *node) search(parts []string, height int) *node {
 	}
 
 	part := parts[height]
-	children := n.matchChilden(part)
+	children := n.matchChildren(part)
 	for _, child := range children {
 		if result := child.search(parts, height+1); result != nil {
 			return result
