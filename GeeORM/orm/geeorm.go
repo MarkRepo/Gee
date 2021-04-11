@@ -2,13 +2,16 @@ package orm
 
 import (
 	"database/sql"
+	"fmt"
 
+	"github.com/MarkRepo/Gee/GeeORM/orm/dialect"
 	"github.com/MarkRepo/Gee/GeeORM/orm/log"
 	"github.com/MarkRepo/Gee/GeeORM/orm/session"
 )
 
 type Engine struct {
-	db *sql.DB
+	db      *sql.DB
+	dialect dialect.Dialect
 }
 
 // NewEngine connect database
@@ -24,7 +27,14 @@ func NewEngine(driver, database string) (*Engine, error) {
 		return nil, err
 	}
 
-	e := &Engine{db: db}
+	// make sure the specific dialect exists
+	d, ok := dialect.GetDialect(driver)
+	if !ok {
+		log.Errorf("dialect %s Not Found", driver)
+		return nil, fmt.Errorf("error: dialect %s Not Found", driver)
+	}
+
+	e := &Engine{db: db, dialect: d}
 	log.Infof("Connect database %s success", database)
 	return e, nil
 }
@@ -37,5 +47,5 @@ func (e *Engine) Close() {
 }
 
 func (e *Engine) NewSession() *session.Session {
-	return session.New(e.db)
+	return session.New(e.db, e.dialect)
 }

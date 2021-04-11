@@ -6,19 +6,23 @@ import (
 	"strings"
 
 	// internal
+	"github.com/MarkRepo/Gee/GeeORM/orm/dialect"
 	"github.com/MarkRepo/Gee/GeeORM/orm/log"
+	"github.com/MarkRepo/Gee/GeeORM/orm/schema"
 )
 
 // Session op to db
 type Session struct {
-	db      *sql.DB
-	sql     strings.Builder
-	sqlVars []interface{}
+	db       *sql.DB
+	dialect  dialect.Dialect
+	refTable *schema.Schema
+	sql      strings.Builder
+	sqlVars  []interface{}
 }
 
 // New create a new session
-func New(db *sql.DB) *Session {
-	return &Session{db: db}
+func New(db *sql.DB, d dialect.Dialect) *Session {
+	return &Session{db: db, dialect: d}
 }
 
 // Clear reset sql and sqlVars
