@@ -41,7 +41,7 @@ func (s *Session) DropTable() error {
 
 func (s *Session) HasTable() bool {
 	sql, values := s.dialect.TableExistSQL(s.RefTable().Name)
-	row := s.Raw(sql, values).QueryRow()
+	row := s.Raw(sql, values...).QueryRow()
 	if row.Err() != nil {
 		log.Error(row.Err())
 	}

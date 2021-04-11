@@ -36,6 +36,7 @@ func (s *sqlite3) DataTypeOf(typ reflect.Value) string {
 	panic(fmt.Sprintf("invalid sql type %s (%s)", typ.Type().Name(), typ.Kind()))
 }
 
-func (s *sqlite3) TableExistSQL(tableName string) (string, interface{}) {
-	return fmt.Sprintf("SELECT name FROM sqlite_master WHERE type='table' and name = ?"), tableName
+func (s *sqlite3) TableExistSQL(tableName string) (string, []interface{}) {
+	args := []interface{}{tableName}
+	return fmt.Sprintf("SELECT name FROM sqlite_master WHERE type='table' and name = ?"), args
 }
