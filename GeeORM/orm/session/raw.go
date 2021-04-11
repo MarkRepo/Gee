@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	// internal
+	"github.com/MarkRepo/Gee/GeeORM/orm/clause"
 	"github.com/MarkRepo/Gee/GeeORM/orm/dialect"
 	"github.com/MarkRepo/Gee/GeeORM/orm/log"
 	"github.com/MarkRepo/Gee/GeeORM/orm/schema"
@@ -16,6 +17,7 @@ type Session struct {
 	db       *sql.DB
 	dialect  dialect.Dialect
 	refTable *schema.Schema
+	clause   clause.Clause
 	sql      strings.Builder
 	sqlVars  []interface{}
 }
@@ -29,6 +31,7 @@ func New(db *sql.DB, d dialect.Dialect) *Session {
 func (s *Session) Clear() {
 	s.sql.Reset()
 	s.sqlVars = nil
+	s.clause = clause.Clause{}
 }
 
 // DB return db
