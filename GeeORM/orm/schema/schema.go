@@ -59,6 +59,7 @@ func Parse(dest interface{}, d dialect.Dialect) *Schema {
 	return schema
 }
 
+// RecordValues  将结构体dest的字段根据table字段顺序打平成slice
 func (s *Schema) RecordValues(dest interface{}) []interface{} {
 	destValue := reflect.Indirect(reflect.ValueOf(dest))
 	var fieldValues []interface{}

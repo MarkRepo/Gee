@@ -1,6 +1,9 @@
 package session
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 type User struct {
 	Name string
@@ -38,5 +41,7 @@ func TestSession_Find(t *testing.T) {
 	var users []User
 	if err := s.Find(&users); err != nil || len(users) != 2 {
 		t.Fatal("failed to query all")
+	} else {
+		fmt.Printf("%+v", users)
 	}
 }

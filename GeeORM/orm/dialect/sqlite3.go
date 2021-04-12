@@ -13,6 +13,7 @@ func init() {
 	RegisterDialect("sqlite3", &sqlite3{})
 }
 
+// DataTypeOf 根据结构体字段类型返回数据库table字段类型
 func (s *sqlite3) DataTypeOf(typ reflect.Value) string {
 	switch typ.Kind() {
 	case reflect.Bool:
@@ -36,6 +37,7 @@ func (s *sqlite3) DataTypeOf(typ reflect.Value) string {
 	panic(fmt.Sprintf("invalid sql type %s (%s)", typ.Type().Name(), typ.Kind()))
 }
 
+// TableExistSQL  返回table是否存在的sql语句
 func (s *sqlite3) TableExistSQL(tableName string) (string, []interface{}) {
 	args := []interface{}{tableName}
 	return fmt.Sprintf("SELECT name FROM sqlite_master WHERE type='table' and name = ?"), args

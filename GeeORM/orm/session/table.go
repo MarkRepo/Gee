@@ -9,6 +9,7 @@ import (
 	"github.com/MarkRepo/Gee/GeeORM/orm/schema"
 )
 
+// Model 格局value，解析并设置refTable
 func (s *Session) Model(value interface{}) *Session {
 	if s.refTable == nil || reflect.TypeOf(value) != reflect.TypeOf(s.refTable.Model) {
 		s.refTable = schema.Parse(value, s.dialect)

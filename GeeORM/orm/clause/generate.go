@@ -11,6 +11,8 @@ package clause
 import (
 	"fmt"
 	"strings"
+
+	"github.com/MarkRepo/Gee/GeeORM/orm/log"
 )
 
 type generator func(values ...interface{}) (string, []interface{})
@@ -39,7 +41,7 @@ func genBindVars(num int) string {
 func _insert(values ...interface{}) (string, []interface{}) {
 	tableName := values[0]
 	fields := strings.Join(values[1].([]string), ",")
-	return fmt.Sprintf("INSERT INTO %s (%v)", tableName, fields), []interface{}{}
+	return fmt.Sprintf("INSERT INTO %s (%s)", tableName, fields), []interface{}{}
 }
 
 // VALUES ($v1), ($v2), ...
@@ -53,12 +55,13 @@ func _values(values ...interface{}) (string, []interface{}) {
 		if bindStr == "" {
 			bindStr = genBindVars(len(v))
 		}
-		sql.WriteString(fmt.Sprintf("(%v)", bindStr))
+		sql.WriteString(fmt.Sprintf("(%s)", bindStr))
 		if i+1 != len(values) {
 			sql.WriteString(", ")
 		}
 		vars = append(vars, v...)
 	}
+	log.Info(sql.String())
 	return sql.String(), vars
 }
 
@@ -66,7 +69,7 @@ func _select(values ...interface{}) (string, []interface{}) {
 	// SELECT $fields FROM $tableName
 	tableName := values[0]
 	fields := strings.Join(values[1].([]string), ",")
-	return fmt.Sprintf("SELECT %v FROM %s", fields, tableName), []interface{}{}
+	return fmt.Sprintf("SELECT %s FROM %s", fields, tableName), []interface{}{}
 }
 
 func _limit(values ...interface{}) (string, []interface{}) {

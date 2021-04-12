@@ -47,7 +47,7 @@ func (s *Session) Raw(sql string, values ...interface{}) *Session {
 	return s
 }
 
-// Exec raw sql with sqlVars
+// Exec with sql and sqlVars
 func (s *Session) Exec() (result sql.Result, err error) {
 	defer s.Clear()
 	log.Info(s.sql.String(), s.sqlVars)
