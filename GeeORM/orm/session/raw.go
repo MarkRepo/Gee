@@ -12,9 +12,17 @@ import (
 	"github.com/MarkRepo/Gee/GeeORM/orm/schema"
 )
 
+// CommonDB is a minimal function set of db
+type CommonDB interface {
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+	Exec(query string, args ...interface{}) (sql.Result, error)
+}
+
 // Session op to db
 type Session struct {
 	db       *sql.DB
+	tx       *sql.Tx // 当 tx 不为空时，则使用 tx 执行 SQL 语句，否则使用 db 执行 SQL 语句
 	dialect  dialect.Dialect
 	refTable *schema.Schema
 	clause   clause.Clause
@@ -35,7 +43,10 @@ func (s *Session) Clear() {
 }
 
 // DB return db
-func (s *Session) DB() *sql.DB {
+func (s *Session) DB() CommonDB {
+	if s.tx != nil {
+		return s.tx
+	}
 	return s.db
 }
 
