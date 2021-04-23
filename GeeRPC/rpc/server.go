@@ -3,12 +3,14 @@ package rpc
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/MarkRepo/Gee/GeeRPC/rpc/codec"
 )
@@ -17,13 +19,16 @@ const MagicNumber = 0x3bef5c // MagicNumber gee rpc 魔数
 
 // Option 协议协商信息
 type Option struct {
-	MagicNumber int        // MagicNumber marks this is a gee rpc request
-	CodecType   codec.Type // CodecType client may choose different Codec to encode body
+	MagicNumber    int           // MagicNumber marks this is a gee rpc request
+	CodecType      codec.Type    // CodecType client may choose different Codec to encode body
+	ConnectTimeout time.Duration // ConnectTimeout 0 means no limit
+	HandleTimeout  time.Duration // HandleTimeout handle timeout
 }
 
 var DefaultOption = &Option{
-	MagicNumber: MagicNumber,
-	CodecType:   codec.GobType,
+	MagicNumber:    MagicNumber,
+	CodecType:      codec.GobType,
+	ConnectTimeout: time.Second * 10,
 }
 
 // | Option{MagicNumber: xxx, CodecType: xxx} | Header{ServiceMethod ...} | Body interface{} |
@@ -84,13 +89,13 @@ func (server *Server) ServeConn(conn io.ReadWriteCloser) {
 		return
 	}
 
-	server.serveCodec(f(conn))
+	server.serveCodec(f(conn), opt.HandleTimeout)
 }
 
 // invalidRequest is a placeHolder for response argv when error occurs
 var invalidRequest = struct{}{}
 
-func (server *Server) serveCodec(cc codec.Codec) {
+func (server *Server) serveCodec(cc codec.Codec, timeout time.Duration) {
 	sending := new(sync.Mutex) // make sure to send a complete response
 	wg := new(sync.WaitGroup)
 	for {
@@ -104,7 +109,7 @@ func (server *Server) serveCodec(cc codec.Codec) {
 			continue
 		}
 		wg.Add(1)
-		go server.handleRequest(cc, req, sending, wg)
+		go server.handleRequest(cc, req, sending, wg, timeout)
 	}
 	wg.Wait()
 	_ = cc.Close()
@@ -165,14 +170,38 @@ func (server *Server) sendResponse(cc codec.Codec, h *codec.Header, body interfa
 	}
 }
 
-func (server *Server) handleRequest(cc codec.Codec, req *request, sending *sync.Mutex, wg *sync.WaitGroup) {
+// handleRequest 带超时处理，这里需要确保 sendResponse 仅调用一次，因此将整个过程拆分为 called 和 sent 两个阶段
+func (server *Server) handleRequest(
+	cc codec.Codec, req *request, sending *sync.Mutex, wg *sync.WaitGroup, timeout time.Duration) {
 	defer wg.Done()
-	if err := req.svc.Call(req.mt, req.arg, req.reply); err != nil {
-		req.h.Error = err.Error()
-		server.sendResponse(cc, req.h, invalidRequest, sending)
+	called := make(chan struct{})
+	sent := make(chan struct{})
+	go func() {
+		err := req.svc.Call(req.mt, req.arg, req.reply)
+		called <- struct{}{}
+		if err != nil {
+			req.h.Error = err.Error()
+			server.sendResponse(cc, req.h, invalidRequest, sending)
+			sent <- struct{}{}
+			return
+		}
+		server.sendResponse(cc, req.h, req.reply.Interface(), sending)
+		sent <- struct{}{}
+	}()
+
+	if timeout == 0 {
+		<-called
+		<-sent
 		return
 	}
-	server.sendResponse(cc, req.h, req.reply.Interface(), sending)
+
+	select {
+	case <-time.After(timeout):
+		req.h.Error = fmt.Sprintf("rpc server: request handle timeout: expect within %s", timeout)
+		server.sendResponse(cc, req.h, invalidRequest, sending)
+	case <-called:
+		<-sent
+	}
 }
 
 // Register publishes in the server the set of methods
