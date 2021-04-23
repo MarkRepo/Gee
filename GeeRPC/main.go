@@ -1,14 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/MarkRepo/Gee/GeeRPC/rpc"
-	"github.com/MarkRepo/Gee/GeeRPC/rpc/codec"
 )
 
 func startServer(addr chan string) {
@@ -23,29 +22,29 @@ func startServer(addr chan string) {
 }
 
 func main() {
+	log.SetFlags(0)
 	addr := make(chan string)
 	go startServer(addr)
 
-	// in fact, following code is like a simple gee rpc client
-	conn, _ := net.Dial("tcp", <-addr)
+	client, _ := rpc.Dial("tcp", <-addr)
 	defer func() {
-		_ = conn.Close()
+		_ = client.Close()
 	}()
 
 	time.Sleep(time.Second)
-	// send options
-	_ = json.NewEncoder(conn).Encode(rpc.DefaultOption)
-	cc := codec.NewGobCodec(conn)
-	// send request & receive response
+	// send request and receive response
+	var wg sync.WaitGroup
 	for i := 0; i < 5; i++ {
-		h := &codec.Header{
-			ServiceMethod: "Foo.Sum",
-			Seq:           uint64(i),
-		}
-		_ = cc.Write(h, fmt.Sprintf("geerpc req %d", h.Seq))
-		_ = cc.ReadHeader(h)
-		var reply string
-		_ = cc.ReadBody(&reply)
-		log.Println("reply:", reply)
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			args := fmt.Sprintf("gee rpc req %d", i)
+			var reply string
+			if err := client.Call("Foo.Sum", args, &reply); err != nil {
+				log.Fatal("call Foo.Sum error: ", err)
+			}
+			log.Println("reply:", reply)
+		}(i)
 	}
+	wg.Wait()
 }
