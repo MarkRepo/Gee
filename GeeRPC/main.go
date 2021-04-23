@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -25,23 +26,20 @@ func startServer(addr chan string) {
 	if err := rpc.Register(&foo); err != nil {
 		log.Fatal("register error: ", err)
 	}
+	rpc.HandleHTTP()
 	// 2. 启动服务
-	l, err := net.Listen("tcp", ":0")
+	l, err := net.Listen("tcp", ":9999")
 	if err != nil {
 		log.Fatal("network error: ", err)
 	}
 	log.Println("start rpc server on", l.Addr())
 	addr <- l.Addr().String()
-	rpc.Accept(l)
+	_ = http.Serve(l, nil)
 }
 
-func main() {
-	log.SetFlags(0)
-	addr := make(chan string)
-	go startServer(addr)
-
+func call(addr chan string) {
 	// 3. 创建连接，初始化client
-	client, _ := rpc.Dial("tcp", <-addr)
+	client, _ := rpc.DialHTTP("tcp", <-addr)
 	defer func() {
 		_ = client.Close()
 	}()
@@ -62,4 +60,11 @@ func main() {
 		}(i)
 	}
 	wg.Wait()
+}
+
+func main() {
+	log.SetFlags(0)
+	ch := make(chan string)
+	go call(ch)
+	startServer(ch)
 }
