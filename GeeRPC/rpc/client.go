@@ -13,12 +13,12 @@ import (
 
 // Call represents an active RPC
 type Call struct {
-	Seq           uint64
-	ServiceMethod string      // format "<service>.<method>"
-	Args          interface{} // arguments to the function
-	Reply         interface{} // reply from the function
-	Error         error       // if error occurs, it will be set
-	Done          chan *Call  // strobes when call is complete
+	Seq           uint64      // Seq 调用序列号
+	ServiceMethod string      // ServiceMethod format "<service>.<method>"
+	Args          interface{} // Args arguments to the function
+	Reply         interface{} // Reply reply from the function
+	Error         error       // Error if error occurs, it will be set
+	Done          chan *Call  // Done strobes when call is complete
 }
 
 func (call *Call) done() {
@@ -29,15 +29,15 @@ func (call *Call) done() {
 // There may be multiple outstanding Calls associated with a single Client,
 // and a Client may be used by multiple goroutines simultaneously
 type Client struct {
-	cc       codec.Codec // 序列化将要发出的请求，反序列化接收到的响应
-	opt      *Option
-	sending  sync.Mutex   // 防止出现多个请求报文混淆
-	header   codec.Header // 由于请求是顺序发出的，因此header可复用
-	mu       sync.Mutex   // protect following
-	seq      uint64
-	pending  map[uint64]*Call // 存储未处理完的请求
-	closing  bool             // user has called Close， 主动关闭
-	shutdown bool             // server has told us to stop， 表示有错误
+	cc       codec.Codec      // cc 客户端使用的 codec.Codec, 用于序列化将要发出的请求，反序列化接收到的响应
+	opt      *Option          // opt 协议协商信息
+	sending  sync.Mutex       // sending 顺序发送请求，防止出现多个请求报文混淆
+	header   codec.Header     // header 由于请求是顺序发出的，因此header可复用
+	mu       sync.Mutex       // mu protect following
+	seq      uint64           // seq 请求序号生成器
+	pending  map[uint64]*Call // pending 存储未处理完的请求
+	closing  bool             // closing user has called Close， 主动关闭
+	shutdown bool             // shutdown server has told us to stop， 表示有错误
 }
 
 var ErrShutDown = errors.New("connection is shut down")
@@ -141,6 +141,7 @@ func NewClient(conn net.Conn, opt *Option) (*Client, error) {
 	return newClientCodec(f(conn), opt), nil
 }
 
+// newClientCodec 根据 codec.Codec 和 Option 创建 Client， 并启动接收协程
 func newClientCodec(cc codec.Codec, opt *Option) *Client {
 	client := &Client{
 		seq:     1, // seq starts with 1, 0 means invalid call
@@ -148,6 +149,7 @@ func newClientCodec(cc codec.Codec, opt *Option) *Client {
 		opt:     opt,
 		pending: make(map[uint64]*Call),
 	}
+	// 启动接收协程
 	go client.receive()
 	return client
 }
@@ -191,6 +193,7 @@ func Dial(network, address string, opts ...*Option) (client *Client, err error) 
 	return NewClient(conn, opt)
 }
 
+// send 发送请求
 func (c *Client) send(call *Call) {
 	// make sure that the client will send a complete request
 	c.sending.Lock()
@@ -219,8 +222,7 @@ func (c *Client) send(call *Call) {
 	}
 }
 
-// Go invokes the function asynchronously
-// It returns the Call structure representing the invocation
+// Go invokes the function asynchronously. It returns the Call structure representing the invocation
 func (c *Client) Go(serviceMethod string, args, reply interface{}, done chan *Call) *Call {
 	if done == nil {
 		done = make(chan *Call, 10)
